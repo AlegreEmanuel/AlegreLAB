@@ -1,6 +1,7 @@
 import socket
 import requests
 import json
+import time
 
 """
 # Configuración del cliente
@@ -53,11 +54,19 @@ while True:
                 tamaño = len(texto)
                 array = texto[(tamaño-2)]
                 
-                Diccionario['temperatura'] = array[18:23]
-                Diccionario['humedad'] = array[40:43]
-                data = json.dumps(Diccionario).encode('utf-8')
-                connection.sendall(data)
-
+                if(Diccionario == {"temperatura":""}):
+                    Diccionario['temperatura'] = array[18:23]
+                    data = json.dumps(Diccionario).encode('utf-8')
+                    connection.sendall(data)
+                elif(Diccionario == {"humedad":""}):
+                    Diccionario['humedad'] = array[40:43]
+                    data = json.dumps(Diccionario).encode('utf-8')
+                    connection.sendall(data)
+                elif(Diccionario == {"temperatura":"","humedad":""}):
+                    Diccionario['temperatura'] = array[18:23]
+                    Diccionario['humedad'] = array[40:43]
+                    data = json.dumps(Diccionario).encode('utf-8')
+                    connection.sendall(data)
             else:
                 print('no hay mas datos de', address)
                 break
