@@ -3,10 +3,11 @@ import requests
 import json
 import time
 
-"""
+
+
 # Configuración del cliente
 host = '192.168.201.57'
-port = 8090
+port = 8080
 
 # Creación del socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,18 +18,14 @@ client_socket.connect((host, port))
 # Envío de datos al servidor
 
 temp_diccionario = {"temperatura": "", "humedad":""}
-
-message = "Hola, servidor echo!"
-client_socket.sendall(message.encode())
-
-client_socket.sendall(temp_diccionario.encode())
+client_socket.sendall(json.dumps(temp_diccionario).encode('utf-8'))
 
 
 # Recepción de datos del servidor
 data = client_socket.recv(1024)
 
 # Decodificación de los datos recibidos y muestra del resultado
-print(f"Datos recibidos del servidor: {data.decode()}")
+print(f"Datos recibidos del servidor: {data.decode('utf-8')}")
 
 # Cierre del socket
 client_socket.close()
@@ -54,6 +51,7 @@ while True:
                 tamaño = len(texto)
                 array = texto[(tamaño-2)]
                 
+
                 if(Diccionario == {"temperatura":""}):
                     Diccionario['temperatura'] = array[18:23]
                     data = json.dumps(Diccionario).encode('utf-8')
@@ -70,4 +68,7 @@ while True:
             else:
                 print('no hay mas datos de', address)
                 break
+
+
+"""
 
