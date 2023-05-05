@@ -21,12 +21,10 @@ class Tarea:
 class AdminTarea:
     def __init__(self, db):
         self.db = TinyDB(db)
-        self.tareas = self.db.table('tareas')
-
+        
     def actualizar_ids_tareas(self):
         tareas = self.tareas.all()
         tareas_ordenadas = sorted(tareas, key=lambda tarea: int(tarea['id']) if 'id' in tarea else 0)
-
         ids_existente = set(map(lambda tarea: tarea['id'], tareas))
         
         for i, tarea in enumerate(tareas_ordenadas):
@@ -88,9 +86,9 @@ class AdminTarea:
         tarea = self.tareas.get(Query().id == tarea_id)
         if tarea is not None:
             self.tareas.remove(doc_ids=[tarea.doc_id])
-            for tarea_posterior in self.tareas.search(Query().id > tarea_id):
-                self.tareas.update({'id': tarea_posterior['id'] - 1},
-                                   doc_ids=[tarea_posterior.doc_id])
+            for tareaPosterior in self.tareas.search(Query().id > tarea_id):
+                self.tareas.update({'id': tareaPosterior['id'] - 1},
+                                   doc_ids=[tareaPosterior.doc_id])
         else:
             print("No se encontró la tarea con ID", tarea_id)
 
@@ -110,7 +108,6 @@ class AdminTarea:
             tarea_dict['actualizada']
         ) for tarea_dict in tareas_dicts]
     
-
 
 if __name__ == '__main__':
     admin_tareas = AdminTarea('db.json')
@@ -136,7 +133,6 @@ if __name__ == '__main__':
             
             tarea = Tarea(None, titulo, descripcion, estado, creada, actualizada)
             
-
             tarea_id = admin_tareas.agregar_tarea(tarea)
             clear_console()
             print("Se ha agregado la tarea con ID\n", tarea_id)
@@ -162,7 +158,7 @@ if __name__ == '__main__':
                 print("\n")
             else:
                 print("No se encontró la tarea con ID", tarea_id)
-        
+                
         
         elif opcion == "3":
             clear_console()
@@ -171,13 +167,12 @@ if __name__ == '__main__':
                 tarea_id = int(input("Ingrese el ID de la tarea: "))
                 admin_tareas.eliminar_tarea(tarea_id)
                 print("Se ha eliminado la tarea con ID", tarea_id)
+                
             elif opcion == '2':
                 admin_tareas.eliminar_todas_las_tareas()
             else:
                 print("Opción inválida.")
-        
-        
-        
+               
         elif opcion == "4":
             clear_console()
 
@@ -195,7 +190,6 @@ if __name__ == '__main__':
             else:
                 print("No hay tareas registradas.")
 
-        
         elif opcion == "5":
                 break
 
