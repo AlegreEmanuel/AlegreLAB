@@ -157,8 +157,11 @@ if __name__ == '__main__':
 
         if opcion == "1":
             titulo = input("Ingrese el título de la tarea: ")
+            if titulo == "":
+                last_id = admin_tareas.get_last_id()
+                titulo = "Tarea " + str(last_id + 1)
             descripcion = input("Ingrese la descripción de la tarea: ")
-            estado = input("Ingrese estado de la tarea: ")
+            estado = "Creado"
             creada = str(datetime.now())
             actualizada = creada
             
