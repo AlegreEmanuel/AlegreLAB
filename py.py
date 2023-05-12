@@ -81,7 +81,7 @@ class AdminTarea:
             'id': last_id + 1,
             'titulo': tarea.titulo,
             'descripcion': tarea.descripcion,
-            'estado': estado,
+            'estado': "creada",
             'creada': tarea.creada,
             'actualizada': tarea.actualizada
         }
@@ -105,18 +105,6 @@ class AdminTarea:
         else:
             return None
 
-    def actualizar_estado_tarea(self, tarea_id: int, estado: str):
-        self.tareas.update({'estado': estado, 'actualizada': str(datetime.now())}, Query().id == tarea_id)
-
-    def eliminar_tarea(self, tarea_id: int):
-        tarea = self.tareas.get(Query().id == tarea_id)
-        if tarea is not None:
-            self.tareas.remove(doc_ids=[tarea.doc_id])
-
-    def eliminar_todas_las_tareas(self):
-        self.tareas.truncate()
-        
-    
     def traer_todas_tareas(self) -> List[Tarea]:
         tareas_dicts = self.tareas.all()
         return [Tarea(
@@ -127,6 +115,28 @@ class AdminTarea:
             tarea_dict['creada'],
             tarea_dict['actualizada']
         ) for tarea_dict in tareas_dicts]
+    
+    def actualizar_estado_tarea(self, tarea_id: int, titulo: str = None, descripcion: str = None, estado: str = None):
+        tarea = self.traer_tarea(tarea_id)
+        if tarea:
+            tarea_dict = {'actualizada': str(datetime.now())}
+            if titulo is not None:
+                tarea_dict['titulo'] = titulo
+            if descripcion is not None:
+                tarea_dict['descripcion'] = descripcion
+            if estado is not None:
+                tarea_dict['estado'] = estado
+            self.tareas.update(tarea_dict, Query().id == tarea_id)
+
+    def eliminar_tarea(self, tarea_id: int):
+        tarea = self.tareas.get(Query().id == tarea_id)
+        if tarea is not None:
+            self.tareas.remove(doc_ids=[tarea.doc_id])
+
+    def eliminar_todas_las_tareas(self):
+        self.tareas.truncate()
+        
+    
     
 
 if __name__ == '__main__':
@@ -139,7 +149,8 @@ if __name__ == '__main__':
         print('1. Agregar tarea')
         print('2. Ver tarea')
         print('3. Eliminar tarea')
-        print('4. Salir')
+        print('4. Editar Tarea')
+        print('5. Salir')
         print("\n")
 
         opcion = input('Opción: ')
@@ -197,6 +208,32 @@ if __name__ == '__main__':
                 print("Opción inválida.")
                
         elif opcion == "4":
+            tarea_id = int(input("Ingrese el ID de la tarea: "))
+            tarea = admin_tareas.traer_tarea(tarea_id)
+            if tarea is not None:
+                opcion = input("Ingrese '1' para actualizar titulo, '2' para actualizar descripcion o 3 para editar todo: ")
+                if opcion == '1':
+                    titulo = input("Ingrese el nuevo titulo: ")
+                    admin_tareas.actualizar_estado_tarea(tarea_id, titulo=titulo)
+                    clear_console()
+                    print("Se ha actualizado el titulo de la tarea con ID", tarea.id)
+                elif opcion == '2':
+                    descripcion = input("Ingrese la nueva descripcion: ")
+                    admin_tareas.actualizar_estado_tarea(tarea_id, descripcion=descripcion)
+                    clear_console()
+                    print("Se ha actualizado la descripcion de la tarea con ID", tarea.id)
+                elif opcion == '3':
+                    titulo = input("Ingrese el nuevo titulo: ")
+                    descripcion = input("Ingrese la nueva descripcion: ")
+                    admin_tareas.actualizar_estado_tarea(tarea_id, titulo=titulo, descripcion=descripcion)
+                    clear_console()
+                    print("Se ha actualizado la tarea con ID", tarea.id)
+            else:
+                print("No se encontró la tarea con ID", tarea_id)
+                                    
+
+        
+        elif opcion == "5":
                 break
 
         else:
