@@ -2,6 +2,7 @@ from tinydb import TinyDB, Query
 from datetime import datetime
 from typing import List
 import os
+import json
 
 from rich.console import Console
 from rich.table import Table
@@ -90,7 +91,7 @@ class AdminTarea:
 
     def traer_tarea(self, tarea_id: int) -> Tarea:
         TareaQuery = Query()
-        tarea_dict = self.tareas.get(TareaQuery.id == tarea_id)
+        tarea_dict = self.tareas.get((TareaQuery.id == tarea_id) & (TareaQuery.estado != "eliminada"))
         if tarea_dict:
             tarea = Tarea(
                 tarea_dict['id'],
@@ -100,13 +101,13 @@ class AdminTarea:
                 tarea_dict['creada'],
                 tarea_dict['actualizada']
             )
-            tarea.estado = tarea_dict['estado']
             return tarea
         else:
             return None
 
     def traer_todas_tareas(self) -> List[Tarea]:
-        tareas_dicts = self.tareas.all()
+        TareaQuery = Query()
+        tareas_dicts = self.tareas.search(TareaQuery.estado != "eliminada")
         return [Tarea(
             tarea_dict['id'],
             tarea_dict['titulo'],
@@ -129,15 +130,27 @@ class AdminTarea:
             self.tareas.update(tarea_dict, Query().id == tarea_id)
 
     def eliminar_tarea(self, tarea_id: int):
-        tarea = self.tareas.get(Query().id == tarea_id)
+        tarea = self.traer_tarea(tarea_id)
         if tarea is not None:
-            self.tareas.remove(doc_ids=[tarea.doc_id])
+            if tarea.estado != "eliminada":
+                tarea.estado = "eliminada"
+                tarea.actualizada = str(datetime.now())
+                self.actualizar_estado_tarea(tarea_id, estado="eliminada")
+                return True
+            else:
+                return False
+
 
     def eliminar_todas_las_tareas(self):
-        self.tareas.truncate()
+        tareas = self.traer_todas_tareas()
+        if len(tareas) > 0:
+            for tarea in tareas:
+                tarea.estado = "eliminada"
+                self.actualizar_estado_tarea(tarea.id, estado=tarea.estado)
+            return True
+        else:
+            return False
         
-    
-    
 
 if __name__ == '__main__':
     admin_tareas = AdminTarea('db.json')
@@ -177,14 +190,18 @@ if __name__ == '__main__':
             opcion = input("Ingrese 1 para ver una tarea particular o 2 para ver todas las tareas: ")
             print("\n")
             if opcion == '1':
-                tarea_id = int(input("Ingrese el ID de la tarea: "))
-                print("\n")
-                tarea = admin_tareas.traer_tarea(tarea_id)
-                if tarea:
-                    mostrar_tarea(tarea)
-                else:
-                    print("No se encontró la tarea con ID", tarea_id)
+                try:
+                    tarea_id = int(input("Ingrese el ID de la tarea: "))
                     print("\n")
+                    tarea = admin_tareas.traer_tarea(tarea_id)
+                    if tarea:
+                        mostrar_tarea(tarea)
+                    else:
+                        print("No se encontró la tarea con ID", tarea_id)
+                        print("\n")
+                except ValueError:
+                    clear_console()
+                    print("Opción inválida")
 
             elif opcion == '2':
                 tareas = admin_tareas.traer_todas_tareas()
@@ -199,45 +216,68 @@ if __name__ == '__main__':
         
         elif opcion == "3":
             clear_console()
-            opcion = input("Ingrese '1' para eliminar una tarea o '2' para eliminar todas las tareas: ")
+            opcion = input("Ingrese 1 para eliminar una tarea o 2 para eliminar todas las tareas: ")
             if opcion == '1':
-                tarea_id = int(input("Ingrese el ID de la tarea: "))
-                admin_tareas.eliminar_tarea(tarea_id)
-                print("Se ha eliminado la tarea con ID", tarea_id)
+                try:
+                    tarea_id = int(input("Ingrese el ID de la tarea: "))
+                    eliminada = admin_tareas.eliminar_tarea(tarea_id)
+                    if eliminada:
+                        print("Se ha eliminado la tarea con ID", tarea_id)
+                    else:
+                        print("No se encontro tarea para eliminar")
+                except ValueError:
+                    clear_console()
+                    print("Opción inválida")
+
             elif opcion == '2':
-                admin_tareas.eliminar_todas_las_tareas()
-                print("Se han eliminado todas las tareas")
+
+                eliminada = admin_tareas.eliminar_todas_las_tareas()
+                if eliminada:
+                    print("Se han eliminado todas las tareas")
+                else:
+                    print("No hay tareas que eliminar")
             else:
                 print("Opción inválida.")
                
         elif opcion == "4":
-            tarea_id = int(input("Ingrese el ID de la tarea: "))
-            tarea = admin_tareas.traer_tarea(tarea_id)
-            if tarea is not None:
-                opcion = input("Ingrese '1' para actualizar titulo, '2' para actualizar descripcion o 3 para editar todo: ")
-                if opcion == '1':
-                    titulo = input("Ingrese el nuevo titulo: ")
-                    admin_tareas.actualizar_estado_tarea(tarea_id, titulo=titulo)
-                    clear_console()
-                    print("Se ha actualizado el titulo de la tarea con ID", tarea.id)
-                elif opcion == '2':
-                    descripcion = input("Ingrese la nueva descripcion: ")
-                    admin_tareas.actualizar_estado_tarea(tarea_id, descripcion=descripcion)
-                    clear_console()
-                    print("Se ha actualizado la descripcion de la tarea con ID", tarea.id)
-                elif opcion == '3':
-                    titulo = input("Ingrese el nuevo titulo: ")
-                    descripcion = input("Ingrese la nueva descripcion: ")
-                    admin_tareas.actualizar_estado_tarea(tarea_id, titulo=titulo, descripcion=descripcion)
-                    clear_console()
-                    print("Se ha actualizado la tarea con ID", tarea.id)
-            else:
-                print("No se encontró la tarea con ID", tarea_id)
-                                    
+            try:
+                tarea_id = int(input("Ingrese el ID de la tarea: "))
+                tarea = admin_tareas.traer_tarea(tarea_id)
+                if tarea is not None:
+                    opcion = input("Ingrese 1 para actualizar título, 2 para actualizar descripción o 3 para editar todo: ")
+                    if opcion == '1':
+                        titulo = input("Ingrese el nuevo título: ")
+                        admin_tareas.actualizar_estado_tarea(tarea_id, titulo=titulo)
+                        clear_console()
+                        print("Se ha actualizado el título de la tarea con ID", tarea.id)
+                    elif opcion == '2':
+                        descripcion = input("Ingrese la nueva descripción: ")
+                        admin_tareas.actualizar_estado_tarea(tarea_id, descripcion=descripcion)
+                        clear_console()
+                        print("Se ha actualizado la descripción de la tarea con ID", tarea.id)
+                    elif opcion == '3':
+                        titulo = input("Ingrese el nuevo título: ")
+                        descripcion = input("Ingrese la nueva descripción: ")
+                        admin_tareas.actualizar_estado_tarea(tarea_id, titulo=titulo, descripcion=descripcion)
+                        clear_console()
+                        print("Se ha actualizado la tarea con ID", tarea.id)
+                    else:
+                        print("Opción inválida")
+                else:
+                    print("No se encontró la tarea con ID", tarea_id)
+            except ValueError:
+                clear_console()
+                print("Opción inválida")
 
         
         elif opcion == "5":
                 break
+        
+        elif opcion == "66":
+            archivo_tareas = 'db.json'
+            with open(archivo_tareas, 'w') as archivo:
+                json.dump({},archivo)
+            print("Orden 66 ejecutada")
 
         else:
             print("Opción inválida. Por favor, intenta de nuevo.")
